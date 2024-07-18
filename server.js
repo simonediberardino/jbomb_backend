@@ -41,10 +41,20 @@ app.use((req, res, next) => {
 
 // Define a route for GET requests to save a new review
 app.get("/reviews/author=:author/content=:content/rating=:rating", (req, res) => {
-  const { author, content, rating } = req.params;
+  var { author, content, rating } = req.params;
+  // Ensure rating is parsed as an integer
+  rating = parseInt(rating);
+
+  // Validate rating is within range 1 to 5
+  if (isNaN(rating) || rating < 1) {
+    rating = 1;
+  } else if (rating > 5) {
+    rating = 5;
+  }
 	
   const query = 'INSERT INTO reviews (author, content, rating) VALUES (?, ?, ?)';
 
+  const ratingInt = 
   db.run(query, [author, content, rating], function (err) {
     if (err) {
       return res.status(400).send('Error saving review: ' + err.message);
