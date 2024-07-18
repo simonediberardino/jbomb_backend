@@ -31,7 +31,15 @@ db.serialize(() => {
   `);
 });
 
-// Define a route for GET requests to /reviews to save a new review
+// Middleware to enable CORS
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE'); // Allow specific methods
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // Allow specific headers
+  next();
+});
+
+// Define a route for GET requests to save a new review
 app.get("/reviews/author=:author/content=:content/rating=:rating", (req, res) => {
   const { author, content, rating } = req.params;
 	
@@ -45,7 +53,7 @@ app.get("/reviews/author=:author/content=:content/rating=:rating", (req, res) =>
   });
 });
 
-// Define a route for GET requests to /reviews to fetch all reviews
+// Define a route for GET requests to fetch all reviews
 app.get('/reviews', (req, res) => {
   const query = 'SELECT * FROM reviews';
 
