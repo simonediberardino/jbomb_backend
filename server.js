@@ -18,6 +18,13 @@ const PORT = 3000;
 // Define the path to your SQLite database file
 const dbPath = path.resolve(__dirname, 'data', 'reviews.db'); // Adjust path as needed
 
+// Check if the database file exists, create it if it doesn't
+if (!fs.existsSync(dbPath)) {
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true }); // Create directories if they don't exist
+  fs.closeSync(fs.openSync(dbPath, 'w')); // Create the empty database file
+  console.log('SQLite database created:', dbPath);
+}
+
 // Initialize SQLite database connection
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
