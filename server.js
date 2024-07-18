@@ -15,21 +15,37 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Define the port the server will listen on
 const PORT = 3000;
 
-// Initialize SQLite database
-const db = new sqlite3.Database(':memory:');
+// Define the path to your SQLite database file
+const dbPath = path.resolve(__dirname, 'data', 'reviews.db'); // Adjust path as needed
 
-// Create a table for reviews
-db.serialize(() => {
+// Initialize SQLite database connection
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Error opening database connection:', err.message);
+  } else {
+    console.log('Connected to SQLite database');
+    createReviewsTable(); // Create reviews table if it doesn't exist
+  }
+});
+
+// Function to create the reviews table if it doesn't exist
+function createReviewsTable() {
   db.run(`
-    CREATE TABLE reviews (
+    CREATE TABLE IF NOT EXISTS reviews (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       author TEXT NOT NULL,
       content TEXT NOT NULL,
       rating INTEGER NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
-  `);
-});
+  `, (err) => {
+    if (err) {
+      console.error('Error creating reviews table:', err.message);
+    } else {
+      console.log('Reviews table created or already exists');
+    }
+  });
+}
 
 // Middleware to enable CORS
 app.use((req, res, next) => {
@@ -41,7 +57,7 @@ app.use((req, res, next) => {
 
 // Define a route for GET requests to save a new review
 app.get("/reviews/author=:author/content=:content/rating=:rating", (req, res) => {
-  var { author, content, rating } = req.params;
+  let { author, content, rating } = req.params;
   // Ensure rating is parsed as an integer
   rating = parseInt(rating);
 
@@ -51,10 +67,9 @@ app.get("/reviews/author=:author/content=:content/rating=:rating", (req, res) =>
   } else if (rating > 5) {
     rating = 5;
   }
-	
+  
   const query = 'INSERT INTO reviews (author, content, rating) VALUES (?, ?, ?)';
 
-  const ratingInt = 
   db.run(query, [author, content, rating], function (err) {
     if (err) {
       return res.status(400).send('Error saving review: ' + err.message);
