@@ -1,6 +1,7 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 // Create an instance of an Express application
 const app = express();
@@ -8,42 +9,51 @@ const app = express();
 // Use body-parser middleware to parse JSON requests
 app.use(bodyParser.json());
 
+// Serve static files from the "public" directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Define the port the server will listen on
 const PORT = 3000;
 
-// Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/reviewsdb', { useNewUrlParser: true, useUnifiedTopology: true });
+// Initialize SQLite database
+const db = new sqlite3.Database(':memory:');
 
-// Define a schema for reviews
-const reviewSchema = new mongoose.Schema({
-  author: String,
-  content: String,
-  rating: Number,
-  created_at: { type: Date, default: Date.now }
+// Create a table for reviews
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      author TEXT NOT NULL,
+      content TEXT NOT NULL,
+      rating INTEGER NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 });
 
-// Create a model for reviews
-const Review = mongoose.model('Review', reviewSchema);
-
 // Define a route for POST requests to /reviews to save a new review
-app.post('/reviews', async (req, res) => {
-  try {
-    const newReview = new Review(req.body);
-    await newReview.save();
+app.post('/reviews', (req, res) => {
+  const { author, content, rating } = req.body;
+  const query = 'INSERT INTO reviews (author, content, rating) VALUES (?, ?, ?)';
+
+  db.run(query, [author, content, rating], function (err) {
+    if (err) {
+      return res.status(400).send('Error saving review: ' + err.message);
+    }
     res.status(201).send('Review saved successfully');
-  } catch (error) {
-    res.status(400).send('Error saving review: ' + error.message);
-  }
+  });
 });
 
 // Define a route for GET requests to /reviews to fetch all reviews
-app.get('/reviews', async (req, res) => {
-  try {
-    const reviews = await Review.find();
-    res.status(200).json(reviews);
-  } catch (error) {
-    res.status(500).send('Error fetching reviews: ' + error.message);
-  }
+app.get('/reviews', (req, res) => {
+  const query = 'SELECT * FROM reviews';
+
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).send('Error fetching reviews: ' + err.message);
+    }
+    res.status(200).json(rows);
+  });
 });
 
 // Start the server and have it listen on the specified port
