@@ -33,6 +33,7 @@ db.serialize(() => {
 
 // Define a route for POST requests to /reviews to save a new review
 app.post('/reviews', (req, res) => {
+  console.log("received post " + req + " at /reviews");
   const { author, content, rating } = req.body;
   const query = 'INSERT INTO reviews (author, content, rating) VALUES (?, ?, ?)';
 
