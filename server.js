@@ -31,10 +31,10 @@ db.serialize(() => {
   `);
 });
 
-// Define a route for POST requests to /reviews to save a new review
-app.post('/reviews', (req, res) => {
-  console.log("received post " + req + " at /reviews");
-  const { author, content, rating } = req.body;
+// Define a route for GET requests to /reviews to save a new review
+app.get("/reviews/author=:author/content=:content/rating=:rating", (req, res) => {
+  const { author, content, rating } = req.params;
+	
   const query = 'INSERT INTO reviews (author, content, rating) VALUES (?, ?, ?)';
 
   db.run(query, [author, content, rating], function (err) {
